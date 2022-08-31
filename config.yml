@@ -1,0 +1,9 @@
+listen:
+  bind_ip: localhost
+  port: 9000
+storage:
+  username: root
+  password: rootroot
+  host: localhost
+  port: 54320
+  database: postgres

@@ -12,22 +12,19 @@ const (
 
 func route() {
 
-	//TODO: refactoring POST POSTLIKE USERLIKE
-
-	// USER
+	logger.Info("register user router")
 	router.GET(allUsersURI, service.FindAllUsers)
 	router.POST(allUsersURI, service.CreateUser)
 	router.GET(userURI, service.FindUserById)
 	router.PATCH(userURI, service.UpdateUserById)
 	router.DELETE(userURI, service.DeleteUserById)
 
-	// POST
-	// NORMALLY FOR POST `id` goes from JWT but I didn't implement it, it goes from route
+	logger.Info("register post router")
 	router.POST("/post/:id", service.CreatePost)
 	router.GET("/post/:id", service.GetPostById)
 	router.PATCH("/post/:id", service.UpdatePost)
 	router.DELETE("/post/:id", service.DeletePost)
 
-	// POSTLIKES
+	logger.Info("register postlike router")
 	router.PATCH("/postlike/:userid/:postid", service.SetPostlike)
 }
