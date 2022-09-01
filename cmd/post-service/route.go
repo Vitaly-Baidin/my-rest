@@ -1,30 +1,31 @@
 package main
 
 import (
-	"github.com/Vitaly-Baidin/my-rest/internal/service"
-)
-
-const (
-	prefix      = "/api/v1"
-	allUsersURI = prefix + "/users"
-	userURI     = prefix + "/users/:id"
+	"github.com/Vitaly-Baidin/my-rest/internal/post"
+	postRepo "github.com/Vitaly-Baidin/my-rest/internal/post/db"
+	"github.com/Vitaly-Baidin/my-rest/internal/postlike"
+	postlikeRepo "github.com/Vitaly-Baidin/my-rest/internal/postlike/db"
+	"github.com/Vitaly-Baidin/my-rest/internal/user"
+	userRepo "github.com/Vitaly-Baidin/my-rest/internal/user/db"
+	"github.com/Vitaly-Baidin/my-rest/pkg/client/postgresql"
 )
 
 func route() {
+	client := postgresql.NewPostgresqlClient()
+
+	userRepository := userRepo.NewPostgresqlRepository(client)
+	postRepository := postRepo.NewPostgresqlRepository(client, userRepository)
+	postlikeRepository := postlikeRepo.NewPostgresqlRepository(client)
 
 	logger.Info("register user router")
-	router.GET(allUsersURI, service.FindAllUsers)
-	router.POST(allUsersURI, service.CreateUser)
-	router.GET(userURI, service.FindUserById)
-	router.PATCH(userURI, service.UpdateUserById)
-	router.DELETE(userURI, service.DeleteUserById)
+	userHandler := user.NewHandler(userRepository)
+	userHandler.Register(router)
 
 	logger.Info("register post router")
-	router.POST("/post/:id", service.CreatePost)
-	router.GET("/post/:id", service.GetPostById)
-	router.PATCH("/post/:id", service.UpdatePost)
-	router.DELETE("/post/:id", service.DeletePost)
+	postHandler := post.NewHandler(postRepository)
+	postHandler.Register(router)
 
 	logger.Info("register postlike router")
-	router.PATCH("/postlike/:userid/:postid", service.SetPostlike)
+	postlikeHandler := postlike.NewHandler(postlikeRepository)
+	postlikeHandler.Register(router)
 }

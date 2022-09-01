@@ -1,45 +1,66 @@
-package service
+package post
 
 import (
 	"fmt"
-	"github.com/Vitaly-Baidin/my-rest/internal/dto/request"
-	"github.com/Vitaly-Baidin/my-rest/internal/storage"
+	"github.com/Vitaly-Baidin/my-rest/internal/handlers"
+	"github.com/gin-gonic/gin"
 	"net/http"
 	"strconv"
-
-	"github.com/gin-gonic/gin"
 )
 
-func CreatePost(context *gin.Context) {
+const (
+	prefix          = "/api/v1"
+	postByUserIdURI = prefix + "/users/:id/posts"
+	postURI         = prefix + "/posts/:id"
+)
+
+type handler struct {
+	repository Repository
+}
+
+func NewHandler(repository Repository) handlers.Handler {
+	return &handler{
+		repository: repository,
+	}
+}
+
+func (h *handler) Register(router *gin.Engine) {
+	router.POST(postByUserIdURI, h.CreatePost)
+	router.GET(postURI, h.GetPostById)
+	router.PATCH(postURI, h.UpdatePost)
+	router.DELETE(postURI, h.DeletePost)
+}
+
+func (h *handler) CreatePost(context *gin.Context) {
 	id, err := strconv.ParseInt(context.Param("id"), 10, 64)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, "cannot convert id to int64")
 		return
 	}
 
-	var input request.Post
+	var input Request
 	if err := context.ShouldBindJSON(&input); err != nil {
 		context.JSON(http.StatusBadRequest, "error binding data")
 		return
 	}
 
-	userId, err := storage.CreatePost(id, input)
+	userId, err := h.repository.CreatePost(id, input)
 	if err != nil {
 		context.JSON(http.StatusInternalServerError, err.Error())
 		return
 	}
-	context.Writer.Header().Add("Location", fmt.Sprintf("http://localhost:3000/users/%d", userId))
+	context.Writer.Header().Add("Location", fmt.Sprintf("/users/%d", userId))
 	context.JSON(http.StatusCreated, fmt.Sprintf("post added to user of id: %d", id))
 }
 
-func GetPostById(context *gin.Context) {
+func (h *handler) GetPostById(context *gin.Context) {
 	id, err := strconv.ParseInt(context.Param("id"), 10, 64)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, "cannot convert id to int64")
 		return
 	}
 
-	post, err := storage.GetPostById(id)
+	post, err := h.repository.GetPostById(id)
 	if err != nil {
 		context.JSON(http.StatusNotFound, err.Error())
 		return
@@ -48,20 +69,20 @@ func GetPostById(context *gin.Context) {
 	context.JSON(http.StatusOK, post)
 }
 
-func UpdatePost(context *gin.Context) {
+func (h *handler) UpdatePost(context *gin.Context) {
 	id, err := strconv.ParseInt(context.Param("id"), 10, 64)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, "cannot convert id to int64")
 		return
 	}
 
-	var input request.Post
+	var input Request
 	if err := context.ShouldBindJSON(&input); err != nil {
 		context.JSON(http.StatusBadRequest, "error binding data")
 		return
 	}
 
-	if err := storage.UpdatePost(id, input); err != nil {
+	if err := h.repository.UpdatePost(id, input); err != nil {
 		context.JSON(http.StatusNotFound, err.Error())
 		return
 	}
@@ -69,14 +90,14 @@ func UpdatePost(context *gin.Context) {
 	context.JSON(http.StatusOK, "post updated")
 }
 
-func DeletePost(context *gin.Context) {
+func (h *handler) DeletePost(context *gin.Context) {
 	id, err := strconv.ParseInt(context.Param("id"), 10, 64)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, "cannot convert id to int64")
 		return
 	}
 
-	if err := storage.DeletePost(id); err != nil {
+	if err := h.repository.DeletePost(id); err != nil {
 		context.JSON(http.StatusBadRequest, err.Error())
 		return
 	}
